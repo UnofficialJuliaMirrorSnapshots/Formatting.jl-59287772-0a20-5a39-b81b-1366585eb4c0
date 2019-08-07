@@ -1,4 +1,5 @@
 using Formatting
+using Compat
 using Compat.Test
 using Compat.Printf
 using Compat.Random
@@ -11,7 +12,7 @@ end
 
 function test_equality()
     println( "test cformat equality...")
-    srand(10)
+    Compat.Random.seed!( 10 )
     fmts = [ (x->@sprintf("%10.4f",x), "%10.4f"),
              (x->@sprintf("%f", x),    "%f"),
              (x->@sprintf("%e", x),    "%e"),
@@ -71,20 +72,20 @@ println( "integer sprintf speed, bypass repeated lookup")
 @time runtime_int_bypass()
 
 function native_float()
-    srand( 10 )
+    Compat.Random.seed!( 10 )
     for i in 1:200000
         @sprintf( "%10.4f", _erfinv( rand() ) )
     end
 end
 function runtime_float()
-    srand( 10 )
+    Compat.Random.seed!( 10 )
     for i in 1:200000
         sprintf1( "%10.4f", _erfinv( rand() ) )
     end
 end
 function runtime_float_bypass()
     f = generate_formatter( "%10.4f" )
-    srand( 10 )
+    Compat.Random.seed!( 10 )
     for i in 1:200000
         f( _erfinv( rand() ) )
     end
@@ -190,3 +191,15 @@ end
 
 test_commas()
 test_format()
+
+function test_generate_formatter()
+    fmt = generate_formatter( "%7.2f" )
+    @test fmt( 1.234 ) == "   1.23"
+    @test fmt( π ) == "   3.14"
+    fmt = generate_formatter( "%'10.2f" )
+    @test fmt( 1234.5678 ) == "   1,234.57"    # BUG 1 extra space
+    fmt = generate_formatter( "%'10d" )
+    @test fmt( 1234567 ) == "   1,234,567"    # BUG 2 extra spaces
+end
+
+test_generate_formatter()
